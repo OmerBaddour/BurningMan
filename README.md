@@ -1,6 +1,6 @@
 # BurningMan
 
-Contains program which calculates the shortest path between two given locations in Burning Man
+Contains a program which calculates the shortest path between two given locations in Burning Man
 
 ![burning_map](https://raw.githubusercontent.com/OmerBaddour/BurningMan/master/burning_map.png)
 
