@@ -17,62 +17,40 @@ public class BurningMan {
 
         try{
             Scanner sc = new Scanner(System.in);
-            System.out.println("Enter your current location: ");
+            System.out.print("Enter your current location: ");
             String current = sc.nextLine();
             validateInput(current);
             // capitalise last character
             current = current.substring(0,current.length()-1) + current.substring(current.length()-1).toUpperCase();
-            System.out.println("Enter your desired location: ");
+            System.out.print("Enter your desired location: ");
             String desired = sc.nextLine();
             validateInput(desired);
             // capitalise last character
             desired = desired.substring(0,desired.length()-1) + desired.substring(desired.length()-1).toUpperCase();
-            System.out.println("The shortest route is: " + distance(current, desired));
+            System.out.println("\nThe shortest route is:\n" + distance(current, desired));
         }
         catch(IOException e){
-            System.out.println("Invalid current location. Enter in the form TimeLetter, for example 1A, 10B, 2:15C, 12:30D. Note that Letter ranges from A-L");
+            System.out.println("Invalid location. Enter in the form <time><letter>, for example 2A, 10B, 2:15C, 9:30D");
+            System.out.println("Note that <time> ranges from 2 to 10, with h, h:15, h:30, h:45");
+            System.out.println("Note that <letter> ranges from A-L");
         }
     }
 
     // confirms validity of current and desired locations
     public static void validateInput(String input) throws IOException{
-        if (input.length() == 2) {
-            if (!regexChecker("[2-9][a-lA-L]", input)) {
-                throw new IOException();
-            }
-        }
-        else if (input.length() == 3) {
-            if (!regexChecker("[1][0-2][a-lA-L]", input)) {
-                throw new IOException();
-            }
-        }
-        else if (input.length() == 5){
-            if(!regexChecker("[2-9][:](1[5]|3[0]|4[5])[a-lA-L]", input)){
-                throw new IOException();
-            }
-        }
-        else if (input.length() == 6){
-            if(!regexChecker("[1][0-2]:(1[5]|3[0]|4[5])[a-lA-L]", input)){
-                throw new IOException();
-            }
-        }
-        else{
+        String timeRegex = "(10|[2-9](:(15|30|45))?)";
+        String letterRegex = "[a-lA-L]";
+        if (!Pattern.matches(timeRegex+letterRegex, input)) {
             throw new IOException();
         }
-    }
-
-    // returns true if input string matches form of regex
-    public static boolean regexChecker(String regex, String input){
-
-        return Pattern.matches(regex, input);
     }
 
     // returns String of optimal path and distance in feet
     public static String distance(String current, String desired){
 
-        final int MANTOESPLANADE = 2500; // in feet
+        final int MAN_TO_ESPLANADE = 2500; // in feet
         // 0th is distance from Esplanade to A in feet, etc.
-        final int[] ESPLANADETOLETTERS = new int[]{400, 650, 900, 1150, 1400, 1600, 1800, 2000, 2200, 2400, 2550, 2700};
+        final int[] ESPLANADE_TO_LETTERS = new int[]{400, 650, 900, 1150, 1400, 1600, 1800, 2000, 2200, 2400, 2550, 2700};
 
         // path 1: arc + adjust
         // establish whether we first traverse arc or traverse towards man
@@ -86,36 +64,38 @@ public class BurningMan {
         double p1Distance = 0;
         if(arcFirst){
             // p1Distance = r*angle + difInLetters
-            int r = MANTOESPLANADE + ESPLANADETOLETTERS[Character.compare(currentLetter, 'A')];
-            p1Distance = r*angle + ESPLANADETOLETTERS[Character.compare(desiredLetter, 'A')] - ESPLANADETOLETTERS[Character.compare(currentLetter, 'A')];
+            int r = MAN_TO_ESPLANADE + ESPLANADE_TO_LETTERS[Character.compare(currentLetter, 'A')];
+            p1Distance = r*angle + ESPLANADE_TO_LETTERS[Character.compare(desiredLetter, 'A')] - ESPLANADE_TO_LETTERS[Character.compare(currentLetter, 'A')];
         }
         else{
             // p1Distance = difInLetters + newR*angle
-            int newR = MANTOESPLANADE + ESPLANADETOLETTERS[Character.compare(desiredLetter, 'A')];
-            p1Distance = ESPLANADETOLETTERS[Character.compare(currentLetter, 'A')] - ESPLANADETOLETTERS[Character.compare(desiredLetter, 'A')] + newR*angle;
+            int newR = MAN_TO_ESPLANADE + ESPLANADE_TO_LETTERS[Character.compare(desiredLetter, 'A')];
+            p1Distance = ESPLANADE_TO_LETTERS[Character.compare(currentLetter, 'A')] - ESPLANADE_TO_LETTERS[Character.compare(desiredLetter, 'A')] + newR*angle;
         }
 
         // path 2: go to esplanade from current letter, go directly to esplanade and destination time, then go to desired letter
-        double p2Distance = ESPLANADETOLETTERS[Character.compare(currentLetter, 'A')] + ESPLANADETOLETTERS[Character.compare(desiredLetter, 'A')];
+        double p2Distance = ESPLANADE_TO_LETTERS[Character.compare(currentLetter, 'A')] + ESPLANADE_TO_LETTERS[Character.compare(desiredLetter, 'A')];
         // distance from esplanade and current letter to esplanade and desired letter can be found with cosine rule
-        p2Distance += Math.sqrt(2*Math.pow(MANTOESPLANADE,2)*(1-Math.cos(angle)));
+        p2Distance += Math.sqrt(2*Math.pow(MAN_TO_ESPLANADE,2)*(1-Math.cos(angle)));
 
+        // TODO add checks for if currentLetter and desiredLetter are equal, to remove that printed line. For example current: 2A, desired: 3A, get "...current location 2A to 2A (line)..."
         if(p1Distance < p2Distance){
             if(arcFirst){
-                return "current location " + current + " to " + desired.substring(0,desired.length()-1)
-                        + currentLetter  + " (" + direction + " arc) and then go to "
-                        + desired + " (line) = " + p1Distance + " feet";
+                return "- current location " + current + " to " + desired.substring(0,desired.length()-1) + currentLetter  + " (" + direction + " arc)"
+                        + "\n- and then go to " + desired + " (line)"
+                        + "\n= " + p1Distance + " feet";
             }
             else{
-                return "current location " + current + " to " + current.substring(0,current.length()-1)
-                        + desiredLetter + " (line) and then go to " + desired
-                        + " (" + direction + " arc) = " + p1Distance + " feet";
+                return "- current location " + current + " to " + current.substring(0,current.length()-1) + desiredLetter + " (line)" 
+                        + "\n- and then go to " + desired + " (" + direction + " arc)"
+                        + "\n= " + p1Distance + " feet";
             }
         }
         else{
-            return "current location " + current + " to " + current.substring(0,current.length()-1) + " & Esplanade (line) "
-                    + "then go to " + desired.substring(0,desired.length()-1) + " & Esplanade (line) "
-                    + "and then go to " + desired + " (line) = " + p2Distance + " feet";
+            return "- current location " + current + " to " + current.substring(0,current.length()-1) + " & Esplanade (line)"
+                    + "\n- then go to " + desired.substring(0,desired.length()-1) + " & Esplanade (line)"
+                    + "\n- and then go to " + desired + " (line)"
+                    + "\n= " + p2Distance + " feet";
         }
     }
 
